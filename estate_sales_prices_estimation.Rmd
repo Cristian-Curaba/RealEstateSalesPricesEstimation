@@ -8,19 +8,74 @@ output:
     toc_depth: '3'
     df_print: paged
 ---
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=TRUE,
-                      fig.align='center')
+knitr::opts_chunk$set(
+  echo=TRUE, warning = FALSE,
+  message = FALSE, fig.align='center')
 ```
 
 
-```{r}
-library(openxlsx)
+## Assignment statement
 
+The [**Residential Building Data Set**](https://archive.ics.uci.edu/ml/datasets/Residential+Building+Data+Set)
+has been donated by Ph.D. Mohammad H. Rafiei from The Ohio State University,
+Columbus, and includes 372 observations about real estate single-family
+residential apartments in Tehran, Iran. In particular, for each apartment are
+reported 8 project physical and financial variables and 19 economic variables
+and indices. This 19 features are reported in 5 time lag^[The number of
+*time resolutions* before the start of the project.], leading a total of 103
+possible explanatory variables for the two output variables, that are
+`construction costs` and `sale prices`.
+
+The aim of the present project is to build an efficient pipeline to estimate
+the `sale price`, observing the explanatory variables.
+
+
+## Data analysis
+
+The first thing we do after importing the dataset from the original repository
+is to rename the columns in a more friendly and informative way. This is done by
+following the description of the features in the `Description` sheet of the
+Excel file.
+
+```{r dataset_import, eval=TRUE, echo=TRUE, warning=FALSE}
+# Import needed libraries for the Features Engineering part
+library(dplyr)    # Base R package for Data Manipulation
+library(openxlsx) # Allows reading Excel files from URL
+
+# Read the Constructions data from `archive.ics.uci.edu`
 Constructions <- read.xlsx(
   'https://archive.ics.uci.edu/ml/machine-learning-databases/00437/Residential-Building-Data-Set.xlsx',
   sheet=1,
   startRow=2)
 
-head(Constructions)
+# Rename columns according to the descriptions in the Excel file
+colnames(Constructions)[1:4] <- c("StartYear", "StartQuarter", "CompletionYear", "CompletionQuarter")
+colnames(Constructions)[5:12] <- c("BuildingZIPCode", "BuildingFloorArea", "LotArea", "TotEstConstructionCost", "EstConstructionCost", "EstConstructionCostBaseYear", "ConstructionDuration", "PriceAtBeginning")
+
+for (lag in 1:5) {
+  colnames(Constructions)[(13+19*(lag-1)):(13+19*lag-1)] <- paste(
+    c("BuildingPermitsNo", "BSI", "WPI", "BuildingPermitsFloorArea", "CumulativeLiquidity", "PrivateSectorInvestment", "LandPriceIndexBaseYear", "LoansExtendedNo", "LoansExtendedAmount", "InterestRate", "ConstructionCostAtCompletion", "ConstructionCostAtBeginning", "OfficialExcangeRateUSD", "StreetMarketExcangeRateUSD", "CPIBaseYear", "CPIFornituresBaseYear", "StockMarketIndex", "CityPopulation", "GoldPriceOnce"),
+    lag, sep='_')
+}
+
+colnames(Constructions)[108:109] <- c("SalesPrices", "ConstructionCosts")
+
+# Explode the Years (abbreviated to the last two digits in the original dataframe) and add .25 year per Quarter
+Constructions$StartYear <- ( Constructions$StartYear + 1300 ) + .25 * ( Constructions$StartQuarter - 1 )
+Constructions$CompletionYear <- ( Constructions$CompletionYear + 1300 ) + .25 * ( Constructions$CompletionQuarter - 1 )
+
+colnames(Constructions)
 ```
+
+Now that we understand what the individual columns refer to, we can analyze
+which variables are qualitative (ordered or not), and which are quantitative
+(discrete or continuous).
+
+
+## Statistical models
+
+
+## Conclusions
+
