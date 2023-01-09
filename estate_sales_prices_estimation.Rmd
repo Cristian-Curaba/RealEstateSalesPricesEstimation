@@ -1,0 +1,26 @@
+---
+title: "Estimation of Iranian Real Estate Units Sale Prices"
+author: "C. Curaba, Y. Martínez Jiménez, E. Stefanel"
+date: "2023-01-31"
+output:
+  html_document:
+    toc: yes
+    toc_depth: '3'
+    df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE,
+                      fig.align='center')
+```
+
+
+```{r}
+library(openxlsx)
+
+Constructions <- read.xlsx(
+  'https://archive.ics.uci.edu/ml/machine-learning-databases/00437/Residential-Building-Data-Set.xlsx',
+  sheet=1,
+  startRow=2)
+
+head(Constructions)
+```
