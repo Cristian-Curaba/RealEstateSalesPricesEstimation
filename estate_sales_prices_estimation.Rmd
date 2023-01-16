@@ -11,8 +11,8 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  echo=TRUE, warning = FALSE,
-  message = FALSE, fig.align='center')
+  eval=TRUE, echo=FALSE, warning=FALSE,
+  message=FALSE, fig.align='center')
 ```
 
 
@@ -26,10 +26,13 @@ reported 8 project physical and financial variables and 19 economic variables
 and indices. This 19 features are reported in 5 time lag^[The number of
 *time resolutions* before the start of the project.], leading a total of 103
 possible explanatory variables for the two output variables, that are
-`construction costs` and `sale prices`.
+`ConstructionCosts` and `SalesPrices`.
 
 The aim of the present project is to build an efficient pipeline to estimate
-the `sale price`, observing the explanatory variables.
+the `SalesPrices`, observing the explanatory variables. In order to do that, we
+start by analyzing the dataset and performing some feature engineering. We then
+study some possible statistical model for the estimation. Finally, we conclude
+by summarizing the results and proposing some possible future improvement.
 
 
 ## Data analysis
@@ -39,10 +42,11 @@ is to rename the columns in a more friendly and informative way. This is done by
 following the description of the features in the `Description` sheet of the
 Excel file.
 
-```{r dataset_import, eval=TRUE, echo=TRUE, warning=FALSE}
+```{r dataset_import}
 # Import needed libraries for the Features Engineering part
 library(dplyr)    # Base R package for Data Manipulation
 library(openxlsx) # Allows reading Excel files from URL
+library(ggplot2)  # Allows plotting advanced graphs
 
 # Read the Constructions data from `archive.ics.uci.edu`
 Constructions <- read.xlsx(
@@ -58,24 +62,142 @@ for (lag in 1:5) {
   colnames(Constructions)[(13+19*(lag-1)):(13+19*lag-1)] <- paste(
     c("BuildingPermitsNo", "BSI", "WPI", "BuildingPermitsFloorArea", "CumulativeLiquidity", "PrivateSectorInvestment", "LandPriceIndexBaseYear", "LoansExtendedNo", "LoansExtendedAmount", "InterestRate", "ConstructionCostAtCompletion", "ConstructionCostAtBeginning", "OfficialExcangeRateUSD", "StreetMarketExcangeRateUSD", "CPIBaseYear", "CPIFornituresBaseYear", "StockMarketIndex", "CityPopulation", "GoldPriceOnce"),
     lag, sep='_')
+    rm(lag)
 }
 
 colnames(Constructions)[108:109] <- c("SalesPrices", "ConstructionCosts")
 
-# Explode the Years (abbreviated to the last two digits in the original dataframe) and add .25 year per Quarter
-Constructions$StartYear <- ( Constructions$StartYear + 1300 ) + .25 * ( Constructions$StartQuarter - 1 )
-Constructions$CompletionYear <- ( Constructions$CompletionYear + 1300 ) + .25 * ( Constructions$CompletionQuarter - 1 )
+# Remove the `ConstructionCosts` column from the dataframe
+Constructions <- Constructions %>% 
+  select(-c("ConstructionCosts"))
 
-colnames(Constructions)
+head(Constructions)
 ```
+
+We are now going to list all the dataframe columns and explain their meanings:
+
+* `StartYear`, `StartQuarter`, `CompletionYear` and `CompletionQuarter` are temporal
+references about the Building project. Only the last two digits of the years are
+reported, so we will ad $1300$ to each year (keeping in mind that dates are
+referring to the Persian calendar);
+* `BuildingZIPCode`, `BuildingFloorArea`, `LotArea`, `TotEstConstructionCost`,
+`EstConstructionCost`, `EstConstructionCostBaseYear`, `ConstructionDuration`,
+`PriceAtBeginning` are $\dots$;
+* `BuildingPermitsNo`, `BSI`, `WPI`, `BuildingPermitsFloorArea`, `CumulativeLiquidity`,
+`PrivateSectorInvestment`, `LandPriceIndexBaseYear`, `LoansExtendedNo`,
+`LoansExtendedAmount`, `InterestRate`, `ConstructionCostAtCompletion`,
+`ConstructionCostAtBeginning`, `OfficialExcangeRateUSD`,
+`StreetMarketExcangeRateUSD`, `CPIBaseYear`, `CPIFornituresBaseYear`,
+`StockMarketIndex`, `CityPopulation`, `GoldPriceOnce` are $\dots$;
+* `SalesPrices` and `ConstructionCosts` are $\dots$.
 
 Now that we understand what the individual columns refer to, we can analyze
 which variables are qualitative (ordered or not), and which are quantitative
 (discrete or continuous).
 
+The first thing that we note is that there are no qualitative columns in the
+dataset. The only columns that could be interpreted as factor column are the
+`StartQuarter` and `CompletionQuarter` ones, where only value from 1 to 4 are
+possible, and `BuildingZIPCode` with values from 1 to 20.
+
+```{r missing_values}
+column_with_missing_values = c()
+
+for (column in colnames(Constructions)) {
+  missing_values <- Constructions %>% 
+    select(column) %>% 
+    is.na() %>% 
+    sum()
+  
+  if (missing_values > 0) {
+    column_with_missing_values <- c(column_with_missing_values, column)
+  }
+}
+
+if (length(column_with_missing_values) > 0) {
+  print("There are columns with missing values!")
+} else
+{
+  print("There are no columns with missing values!")
+}
+
+rm(column, missing_values, column_with_missing_values)
+```
+
+Fortunately, there are no columns where missing values occur. This can be
+because a preventive data cleaning has been done by the person who uploaded the
+dataframe on the public repository, or because the data collection method was
+meticulous and error-free. We lean toward the first of the two options.
+
+We note that we could implode years and quarters information into a single value,
+one for starting date and one for completion date. This is done by simply adding
+$.25$ to each year value for each ended quarter of the current year at the start
+(or completion) of the project. In this way, the first quarter of the $x$ year
+will be $x.00$, the second quarter will be $x.25$, and so on.
+
+```{r feature_engineering}
+# Explode the Years (abbreviated to the last two digits in the original dataframe) and add .25 year per Quarter
+Constructions$StartYear <- ( Constructions$StartYear + 1300 ) + .25 * ( Constructions$StartQuarter - 1 )
+Constructions$CompletionYear <- ( Constructions$CompletionYear + 1300 ) + .25 * ( Constructions$CompletionQuarter - 1 )
+
+# Remove the `StartQuarter` and `CompletionQuarter` from the dataframe
+Constructions <- Constructions %>% 
+  select(-c("StartQuarter", "CompletionQuarter"))
+```
+
+We now analyze the distribution of the response variable in the dataset.
+Plotting the histogram, and analyzing mean and variance can help us.
+
+```{r salesprices_hist}
+summary(Constructions$SalesPrices)
+
+Constructions %>%
+  ggplot(aes(x=SalesPrices)) + 
+  geom_histogram() +
+  geom_vline(aes(xintercept=mean(SalesPrices),color='mean'), linetype="dashed", size=.5) +
+  geom_vline(aes(xintercept=median(SalesPrices),color='median'), linetype="dashed", size=.5) +
+  scale_color_manual(name = "Statistics", values = c(mean = "red", median = "blue")) +
+  labs(
+    title='Sales prices histogram plot',
+    subtitle='Distribution of Sales prices in the Constructions dataframe',
+    caption="Data from archive.ics.uci.edu",
+    x=expression("Sales prices (" %*% ~ 10^4 ~ "Rial)" ),
+    y='Count'
+  ) +
+  theme_classic()
+```
+
+The distribution of `SalesPrices` values in the dataframe is highly skewed
+towards left. We can try to plot the same histogram, but applying a logarithmic
+scale to the vector of values.
+
+```{r salesprices_log_hist}
+Constructions %>%
+  ggplot(aes(x=SalesPrices)) + 
+  geom_histogram() +
+  scale_x_log10() +
+  geom_vline(aes(xintercept=mean(SalesPrices),color='mean'), linetype="dashed", size=.5) +
+  geom_vline(aes(xintercept=median(SalesPrices),color='median'), linetype="dashed", size=.5) +
+  scale_color_manual(name = "Statistics", values = c(mean = "red", median = "blue")) +
+  labs(
+    title='Sales prices logaritmic histogram plot',
+    subtitle='Distribution of Sales prices in the Constructions dataframe',
+    caption="Data from archive.ics.uci.edu",
+    x=expression("Sales prices (" %*% ~ 10^4 ~ "Rial)" ),
+    y='Count'
+  ) +
+  theme_classic()
+```
+
 
 ## Statistical models
 
+```{r linear_model, echo=TRUE}
+
+lm.base <- lm(SalesPrices ~ ., Constructions)
+
+summary(lm.base)
+```
 
 ## Conclusions
 
