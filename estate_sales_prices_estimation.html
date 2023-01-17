@@ -1644,13 +1644,14 @@ analysis</a></li>
 <h2>Assignment statement</h2>
 <p>The <a href="https://archive.ics.uci.edu/ml/datasets/Residential+Building+Data+Set"><strong>Residential
 Building Data Set</strong></a> has been donated by Ph.D. Mohammad H.
-Rafiei from The Ohio State University, Columbus, and includes 372
-observations about real estate single-family residential apartments in
-Tehran, Iran. In particular, for each apartment are reported 8 project
-physical and financial variables and 19 economic variables and indices.
-This 19 features are reported in 5 time lag<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>, leading a total of
-103 possible explanatory variables for the two output variables, that
-are <code>ConstructionCosts</code> and <code>SalesPrices</code>.</p>
+Rafiei from The Ohio State University, Columbus, and includes <span class="math inline">\(372\)</span> observations about real estate
+single-family residential apartments in Tehran, Iran. In particular, for
+each apartment are reported <span class="math inline">\(8\)</span>
+project physical and financial variables and <span class="math inline">\(19\)</span> economic variables and indices. This
+<span class="math inline">\(19\)</span> features are reported in <span class="math inline">\(5\)</span> time lag<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>, leading a total of
+<span class="math inline">\(103\)</span> possible explanatory variables
+for the two output variables, that are <code>ConstructionCosts</code>
+and <code>SalesPrices</code>.</p>
 <p>The aim of the present project is to build an efficient pipeline to
 estimate the <code>SalesPrices</code>, observing the explanatory
 variables. In order to do that, we start by analyzing the dataset and
@@ -1676,27 +1677,51 @@ meanings:</p>
 <li><code>StartYear</code>, <code>StartQuarter</code>,
 <code>CompletionYear</code> and <code>CompletionQuarter</code> are
 temporal references about the Building project. Only the last two digits
-of the years are reported, so we will ad <span class="math inline">\(1300\)</span> to each year (keeping in mind that
+of the years are reported, so we will add <span class="math inline">\(1300\)</span> to each year (keeping in mind that
 dates are referring to the Persian calendar);</li>
-<li><code>BuildingZIPCode</code>, <code>BuildingFloorArea</code>,
-<code>LotArea</code>, <code>TotEstConstructionCost</code>,
-<code>EstConstructionCost</code>,
-<code>EstConstructionCostBaseYear</code>,
-<code>ConstructionDuration</code>, <code>PriceAtBeginning</code> are
-<span class="math inline">\(\dots\)</span>;</li>
-<li><code>BuildingPermitsNo</code>, <code>BSI</code>, <code>WPI</code>,
-<code>BuildingPermitsFloorArea</code>, <code>CumulativeLiquidity</code>,
-<code>PrivateSectorInvestment</code>,
-<code>LandPriceIndexBaseYear</code>, <code>LoansExtendedNo</code>,
-<code>LoansExtendedAmount</code>, <code>InterestRate</code>,
-<code>ConstructionCostAtCompletion</code>,
-<code>ConstructionCostAtBeginning</code>,
-<code>OfficialExcangeRateUSD</code>,
-<code>StreetMarketExcangeRateUSD</code>, <code>CPIBaseYear</code>,
-<code>CPIFornituresBaseYear</code>, <code>StockMarketIndex</code>,
-<code>CityPopulation</code>, <code>GoldPriceOnce</code> are <span class="math inline">\(\dots\)</span>;</li>
-<li><code>SalesPrices</code> and <code>ConstructionCosts</code> are
-<span class="math inline">\(\dots\)</span>.</li>
+<li><code>BuildingZIPCode</code> is the ZIP Code where the Building is
+located,. <code>BuildingFloorArea</code> and <code>LotArea</code> are
+surfaces values, measured in square meters, referring to the
+construction lot. <code>TotEstConstructionCost</code>,
+<code>EstConstructionCost</code> and
+<code>EstConstructionCostBaseYear</code> are total construction cost, in
+ten thousands Rial (Iranian currency), actual and estimated at the
+beginning of the project (the last is also adjusted to inflation at the
+year <span class="math inline">\(1383\)</span>).
+<code>ConstructionDuration</code> is the duration, in quarters, of the
+constructions, and <code>PriceAtBeginning</code> is the specific square
+root price before the construction start. This are Building-specific
+features that do not change during the construction period;</li>
+<li>There is then a set of <span class="math inline">\(19\)</span>
+features that are measured at five regular intervals from the
+construction starting date and the completion date. Each of them will
+then be present in the dataframe for a total of five times.
+<code>BuildingPermitsNo</code> is the number of building permits issued,
+<code>BSI</code> and <code>WPI</code> are Building Services Index and
+Wholesale Price Index, <code>BuildingPermitsFloorArea</code> is the
+total floor areas, in square meters, of building permits issued by the
+city. <code>CumulativeLiquidity</code> represents, in ten milions of
+Rial, how rapidly different types of assets can be changed to cash,
+<code>PrivateSectorInvestment</code> is the sector investment in new
+buildings, <code>LandPriceIndexBaseYear</code> is the square root price
+in year <span class="math inline">\(1383\)</span>. The columns
+<code>LoansExtendedNo</code>, <code>LoansExtendedAmount</code> and
+<code>InterestRate</code> refers to extended loans during the lag.
+<code>ConstructionCostAtCompletion</code> and
+<code>ConstructionCostAtBeginning</code> are average construction cost
+of buildings by private sector at the time of completion and beginning
+of construction. <code>OfficialExcangeRateUSD</code> and
+<code>StreetMarketExcangeRateUSD</code> are official and nonofficial
+(street market) exchange rate with respect to dollars.
+<code>CPIBaseYear</code> and <code>CPIFornituresBaseYear</code> are
+respectively total Consumer Price Index and CPI only related to
+fornitures. <code>StockMarketIndex</code> represent the payback
+condition of investment in stock market, <code>CityPopulation</code> the
+population of the city and <code>GoldPriceOnce</code> gold price, in
+Rial, per ounce;</li>
+<li><code>SalesPrices</code> and <code>ConstructionCosts</code> are the
+two response variables, indicating the final selling price of the estate
+and total construction costs, respectively. Both measures use <span class="math inline">\(10000\)</span> Rial as measure unit.</li>
 </ul>
 <p>Now that we understand what the individual columns refer to, we can
 analyze which variables are qualitative (ordered or not), and which are
@@ -1704,8 +1729,11 @@ quantitative (discrete or continuous).</p>
 <p>The first thing that we note is that there are no qualitative columns
 in the dataset. The only columns that could be interpreted as factor
 column are the <code>StartQuarter</code> and
-<code>CompletionQuarter</code> ones, where only value from 1 to 4 are
-possible, and <code>BuildingZIPCode</code> with values from 1 to 20.</p>
+<code>CompletionQuarter</code> ones, where only value from <span class="math inline">\(1\)</span> to <span class="math inline">\(4\)</span> are possible, and
+<code>BuildingZIPCode</code> with values from <span class="math inline">\(1\)</span> to <span class="math inline">\(20\)</span>. All the other variables are
+continuous quantitative measures.</p>
+<p>Next, we proceed to check whether any records contain any missing
+columns. If so, we will decide how to handle it.</p>
 <pre><code>## [1] &quot;There are no columns with missing values!&quot;</code></pre>
 <p>Fortunately, there are no columns where missing values occur. This
 can be because a preventive data cleaning has been done by the person
@@ -1730,8 +1758,10 @@ but applying a logarithmic scale to the vector of values.</p>
 </div>
 <div id="statistical-models" class="section level2">
 <h2>Statistical models</h2>
-<pre class="r"><code>lm.base &lt;- lm(SalesPrices ~ ., Constructions)
+<pre class="r"><code># Sample linear model
+lm.base &lt;- lm(SalesPrices ~ ., Constructions)
 
+# Print the summary of the fitted linear model
 summary(lm.base)</code></pre>
 <pre><code>## 
 ## Call:
@@ -1739,86 +1769,104 @@ summary(lm.base)</code></pre>
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -940.48  -43.26   -3.03   43.58  651.13 
+## -923.78  -50.65   -3.58   42.48  622.73 
 ## 
 ## Coefficients: (31 not defined because of singularities)
 ##                                  Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)                     4.996e+06  1.293e+07   0.386 0.699520    
-## StartYear                      -3.798e+03  9.411e+03  -0.404 0.686852    
-## CompletionYear                  1.540e+02  1.706e+01   9.031  &lt; 2e-16 ***
-## BuildingZIPCode                -5.067e+00  2.246e+00  -2.256 0.024823 *  
-## BuildingFloorArea               6.358e-02  2.217e-02   2.868 0.004425 ** 
-## LotArea                        -2.224e-01  6.509e-02  -3.417 0.000722 ***
-## TotEstConstructionCost          1.012e-02  3.606e-02   0.281 0.779061    
-## EstConstructionCost            -6.638e-01  3.378e-01  -1.965 0.050302 .  
-## EstConstructionCostBaseYear     9.169e-02  6.389e-02   1.435 0.152294    
+## (Intercept)                     4.484e+06  1.344e+07   0.334  0.73901    
+## StartYear                      -3.427e+03  9.784e+03  -0.350  0.72638    
+## CompletionYear                  1.555e+02  1.788e+01   8.696 3.02e-16 ***
+## BuildingZIPCode2                4.393e+01  5.481e+01   0.802  0.42352    
+## BuildingZIPCode3                3.934e+01  4.657e+01   0.845  0.39900    
+## BuildingZIPCode4                4.178e+01  5.754e+01   0.726  0.46835    
+## BuildingZIPCode5               -1.852e+01  6.126e+01  -0.302  0.76261    
+## BuildingZIPCode6                8.459e+01  5.485e+01   1.542  0.12411    
+## BuildingZIPCode7               -1.805e+01  6.300e+01  -0.286  0.77476    
+## BuildingZIPCode8                3.564e+01  6.250e+01   0.570  0.56895    
+## BuildingZIPCode9               -6.305e+01  9.947e+01  -0.634  0.52671    
+## BuildingZIPCode10              -1.218e+01  9.071e+01  -0.134  0.89326    
+## BuildingZIPCode11              -4.316e+01  9.724e+01  -0.444  0.65749    
+## BuildingZIPCode12              -2.763e+01  7.453e+01  -0.371  0.71117    
+## BuildingZIPCode13               1.153e+01  7.377e+01   0.156  0.87589    
+## BuildingZIPCode14              -2.530e+01  6.562e+01  -0.385  0.70017    
+## BuildingZIPCode15              -3.945e+01  7.761e+01  -0.508  0.61162    
+## BuildingZIPCode16               1.678e+01  8.574e+01   0.196  0.84498    
+## BuildingZIPCode17              -5.572e+01  6.973e+01  -0.799  0.42488    
+## BuildingZIPCode18              -6.707e+01  7.322e+01  -0.916  0.36043    
+## BuildingZIPCode19              -5.009e+01  7.254e+01  -0.691  0.49039    
+## BuildingZIPCode20              -3.147e+01  6.468e+01  -0.487  0.62696    
+## BuildingFloorArea               7.410e-02  2.368e-02   3.129  0.00194 ** 
+## LotArea                        -2.490e-01  6.907e-02  -3.605  0.00037 ***
+## TotEstConstructionCost          1.262e-03  3.745e-02   0.034  0.97314    
+## EstConstructionCost            -5.241e-01  3.763e-01  -1.393  0.16480    
+## EstConstructionCostBaseYear     7.662e-02  7.097e-02   1.079  0.28130    
 ## ConstructionDuration                   NA         NA      NA       NA    
-## PriceAtBeginning                1.199e+00  1.692e-02  70.863  &lt; 2e-16 ***
-## BuildingPermitsNo_1             9.434e-02  9.753e-01   0.097 0.923012    
-## BSI_1                           5.072e+02  1.508e+03   0.336 0.736946    
-## WPI_1                           1.154e+02  5.062e+02   0.228 0.819813    
-## BuildingPermitsFloorArea_1     -3.115e+02  6.610e+02  -0.471 0.637827    
-## CumulativeLiquidity_1           1.826e-03  3.918e-02   0.047 0.962849    
-## PrivateSectorInvestment_1       3.320e-01  6.201e-01   0.535 0.592805    
-## LandPriceIndexBaseYear_1       -8.055e+01  2.829e+02  -0.285 0.776051    
-## LoansExtendedNo_1               2.102e+00  6.406e+00   0.328 0.743015    
-## LoansExtendedAmount_1          -4.428e-02  1.498e-01  -0.296 0.767809    
-## InterestRate_1                  3.294e+02  4.281e+02   0.769 0.442307    
-## ConstructionCostAtCompletion_1  2.320e-01  3.649e+00   0.064 0.949341    
-## ConstructionCostAtBeginning_1  -2.054e-01  9.800e-01  -0.210 0.834138    
-## OfficialExcangeRateUSD_1        5.067e-02  1.930e-01   0.262 0.793125    
-## StreetMarketExcangeRateUSD_1    1.315e-02  3.353e-01   0.039 0.968739    
-## CPIBaseYear_1                   9.627e+01  5.866e+02   0.164 0.869761    
-## CPIFornituresBaseYear_1         1.619e+02  5.546e+02   0.292 0.770532    
-## StockMarketIndex_1              2.979e-01  1.106e+00   0.269 0.787762    
-## CityPopulation_1               -2.766e-02  1.905e-01  -0.145 0.884646    
-## GoldPriceOnce_1                 5.242e-03  1.696e-02   0.309 0.757503    
-## BuildingPermitsNo_2             1.524e-01  4.707e-01   0.324 0.746414    
-## BSI_2                          -5.672e+02  1.875e+03  -0.302 0.762540    
-## WPI_2                           1.250e+02  6.496e+02   0.192 0.847529    
-## BuildingPermitsFloorArea_2     -3.755e+02  1.302e+03  -0.288 0.773326    
-## CumulativeLiquidity_2           1.437e-02  1.236e-01   0.116 0.907514    
-## PrivateSectorInvestment_2       7.595e-02  7.909e-01   0.096 0.923562    
-## LandPriceIndexBaseYear_2       -1.251e+02  5.669e+02  -0.221 0.825543    
-## LoansExtendedNo_2               3.638e+00  1.154e+01   0.315 0.752826    
-## LoansExtendedAmount_2          -5.121e-02  3.295e-01  -0.155 0.876580    
-## InterestRate_2                  9.426e+01  3.120e+02   0.302 0.762733    
-## ConstructionCostAtCompletion_2 -1.259e-01  4.112e+00  -0.031 0.975591    
-## ConstructionCostAtBeginning_2   1.464e+00  3.611e+00   0.405 0.685520    
-## OfficialExcangeRateUSD_2       -4.542e-01  1.808e+00  -0.251 0.801828    
-## StreetMarketExcangeRateUSD_2    7.162e-01  2.287e+00   0.313 0.754383    
-## CPIBaseYear_2                   4.757e+02  1.188e+03   0.400 0.689165    
-## CPIFornituresBaseYear_2        -1.169e+02  8.061e+02  -0.145 0.884782    
-## StockMarketIndex_2             -7.258e-03  1.563e-01  -0.046 0.962996    
-## CityPopulation_2               -4.690e-02  2.010e-01  -0.233 0.815665    
-## GoldPriceOnce_2                -1.081e-02  4.201e-02  -0.257 0.797080    
-## BuildingPermitsNo_3             1.193e-01  1.460e-01   0.817 0.414797    
-## BSI_3                          -1.674e+01  1.099e+03  -0.015 0.987860    
-## WPI_3                          -1.398e+02  4.952e+02  -0.282 0.777922    
-## BuildingPermitsFloorArea_3     -4.294e+01  7.068e+02  -0.061 0.951601    
-## CumulativeLiquidity_3           6.767e-03  4.477e-02   0.151 0.879960    
-## PrivateSectorInvestment_3       3.481e-01  2.266e+00   0.154 0.878017    
-## LandPriceIndexBaseYear_3        2.148e+01  1.132e+02   0.190 0.849597    
-## LoansExtendedNo_3              -4.161e+00  3.298e+01  -0.126 0.899685    
-## LoansExtendedAmount_3          -1.569e-02  4.651e-02  -0.337 0.736082    
-## InterestRate_3                 -6.197e+01  5.350e+02  -0.116 0.907863    
-## ConstructionCostAtCompletion_3  6.591e-01  5.312e+00   0.124 0.901342    
-## ConstructionCostAtBeginning_3   1.177e+00  3.601e+00   0.327 0.744075    
-## OfficialExcangeRateUSD_3       -3.819e-01  1.469e+00  -0.260 0.795063    
-## StreetMarketExcangeRateUSD_3   -6.746e-01  1.770e+00  -0.381 0.703361    
-## CPIBaseYear_3                   8.475e+01  2.717e+02   0.312 0.755290    
-## CPIFornituresBaseYear_3         8.703e+01  1.123e+03   0.077 0.938287    
-## StockMarketIndex_3             -4.751e-01  1.360e+00  -0.349 0.727017    
-## CityPopulation_3               -4.995e-02  1.725e-01  -0.290 0.772401    
-## GoldPriceOnce_3                 6.197e-04  5.395e-03   0.115 0.908633    
-## BuildingPermitsNo_4            -3.707e-02  8.033e-01  -0.046 0.963224    
-## BSI_4                          -3.773e+02  6.583e+02  -0.573 0.566986    
-## WPI_4                           2.067e+02  6.314e+02   0.327 0.743643    
-## BuildingPermitsFloorArea_4     -2.671e+01  7.940e+02  -0.034 0.973192    
-## CumulativeLiquidity_4          -1.973e-02  7.846e-02  -0.251 0.801633    
-## PrivateSectorInvestment_4      -7.459e-03  7.899e-01  -0.009 0.992473    
-## LandPriceIndexBaseYear_4        6.003e+00  1.513e+02   0.040 0.968366    
-## LoansExtendedNo_4              -1.162e+01  5.387e+01  -0.216 0.829439    
+## PriceAtBeginning                1.196e+00  2.404e-02  49.731  &lt; 2e-16 ***
+## BuildingPermitsNo_1             1.661e-01  1.024e+00   0.162  0.87124    
+## BSI_1                           4.376e+02  1.570e+03   0.279  0.78061    
+## WPI_1                           7.062e+01  5.284e+02   0.134  0.89378    
+## BuildingPermitsFloorArea_1     -2.834e+02  6.868e+02  -0.413  0.68022    
+## CumulativeLiquidity_1           5.082e-03  4.097e-02   0.124  0.90135    
+## PrivateSectorInvestment_1       3.738e-01  6.411e-01   0.583  0.56034    
+## LandPriceIndexBaseYear_1       -6.120e+01  2.949e+02  -0.208  0.83574    
+## LoansExtendedNo_1               1.604e+00  6.719e+00   0.239  0.81153    
+## LoansExtendedAmount_1          -3.402e-02  1.558e-01  -0.218  0.82728    
+## InterestRate_1                  3.494e+02  4.458e+02   0.784  0.43386    
+## ConstructionCostAtCompletion_1 -5.352e-03  3.808e+00  -0.001  0.99888    
+## ConstructionCostAtBeginning_1  -4.247e-01  1.028e+00  -0.413  0.67979    
+## OfficialExcangeRateUSD_1        6.940e-02  2.036e-01   0.341  0.73342    
+## StreetMarketExcangeRateUSD_1   -5.785e-03  3.510e-01  -0.016  0.98686    
+## CPIBaseYear_1                   6.479e+01  6.129e+02   0.106  0.91589    
+## CPIFornituresBaseYear_1         1.264e+02  5.781e+02   0.219  0.82713    
+## StockMarketIndex_1              2.249e-01  1.151e+00   0.195  0.84521    
+## CityPopulation_1               -1.708e-02  1.991e-01  -0.086  0.93171    
+## GoldPriceOnce_1                 4.958e-03  1.767e-02   0.281  0.77924    
+## BuildingPermitsNo_2             1.639e-01  4.894e-01   0.335  0.73799    
+## BSI_2                          -4.516e+02  1.954e+03  -0.231  0.81739    
+## WPI_2                           8.672e+01  6.781e+02   0.128  0.89833    
+## BuildingPermitsFloorArea_2     -3.538e+02  1.355e+03  -0.261  0.79424    
+## CumulativeLiquidity_2           4.140e-03  1.293e-01   0.032  0.97449    
+## PrivateSectorInvestment_2       2.275e-03  8.254e-01   0.003  0.99780    
+## LandPriceIndexBaseYear_2       -8.965e+01  5.915e+02  -0.152  0.87963    
+## LoansExtendedNo_2               3.130e+00  1.203e+01   0.260  0.79492    
+## LoansExtendedAmount_2          -2.725e-02  3.448e-01  -0.079  0.93706    
+## InterestRate_2                  8.984e+01  3.233e+02   0.278  0.78132    
+## ConstructionCostAtCompletion_2 -3.537e-01  4.295e+00  -0.082  0.93442    
+## ConstructionCostAtBeginning_2   1.281e+00  3.755e+00   0.341  0.73321    
+## OfficialExcangeRateUSD_2       -3.490e-01  1.886e+00  -0.185  0.85333    
+## StreetMarketExcangeRateUSD_2    6.184e-01  2.382e+00   0.260  0.79539    
+## CPIBaseYear_2                   4.072e+02  1.238e+03   0.329  0.74237    
+## CPIFornituresBaseYear_2        -1.703e+02  8.455e+02  -0.201  0.84050    
+## StockMarketIndex_2              1.585e-02  1.631e-01   0.097  0.92269    
+## CityPopulation_2               -3.475e-02  2.097e-01  -0.166  0.86850    
+## GoldPriceOnce_2                -8.439e-03  4.381e-02  -0.193  0.84739    
+## BuildingPermitsNo_3             1.365e-01  1.506e-01   0.907  0.36530    
+## BSI_3                           4.219e+01  1.150e+03   0.037  0.97076    
+## WPI_3                          -1.158e+02  5.161e+02  -0.224  0.82256    
+## BuildingPermitsFloorArea_3     -1.072e+02  7.416e+02  -0.145  0.88518    
+## CumulativeLiquidity_3           4.592e-03  4.661e-02   0.099  0.92159    
+## PrivateSectorInvestment_3       2.231e-01  2.370e+00   0.094  0.92506    
+## LandPriceIndexBaseYear_3        1.379e+01  1.182e+02   0.117  0.90720    
+## LoansExtendedNo_3              -1.285e+00  3.446e+01  -0.037  0.97029    
+## LoansExtendedAmount_3          -2.036e-02  4.892e-02  -0.416  0.67760    
+## InterestRate_3                 -2.160e+01  5.608e+02  -0.039  0.96930    
+## ConstructionCostAtCompletion_3  3.633e-01  5.557e+00   0.065  0.94792    
+## ConstructionCostAtBeginning_3   9.235e-01  3.728e+00   0.248  0.80451    
+## OfficialExcangeRateUSD_3       -3.156e-01  1.531e+00  -0.206  0.83682    
+## StreetMarketExcangeRateUSD_3   -5.945e-01  1.840e+00  -0.323  0.74691    
+## CPIBaseYear_3                   1.030e+02  2.812e+02   0.366  0.71444    
+## CPIFornituresBaseYear_3         1.645e+02  1.179e+03   0.139  0.88916    
+## StockMarketIndex_3             -3.975e-01  1.412e+00  -0.282  0.77850    
+## CityPopulation_3               -4.312e-02  1.799e-01  -0.240  0.81073    
+## GoldPriceOnce_3                 3.089e-04  5.655e-03   0.055  0.95648    
+## BuildingPermitsNo_4             2.943e-02  8.400e-01   0.035  0.97207    
+## BSI_4                          -3.515e+02  6.821e+02  -0.515  0.60677    
+## WPI_4                           1.721e+02  6.574e+02   0.262  0.79372    
+## BuildingPermitsFloorArea_4      1.874e+01  8.306e+02   0.023  0.98202    
+## CumulativeLiquidity_4          -1.623e-02  8.181e-02  -0.198  0.84288    
+## PrivateSectorInvestment_4      -6.424e-02  8.295e-01  -0.077  0.93833    
+## LandPriceIndexBaseYear_4       -4.916e+00  1.578e+02  -0.031  0.97517    
+## LoansExtendedNo_4              -8.172e+00  5.620e+01  -0.145  0.88450    
 ## LoansExtendedAmount_4                  NA         NA      NA       NA    
 ## InterestRate_4                         NA         NA      NA       NA    
 ## ConstructionCostAtCompletion_4         NA         NA      NA       NA    
@@ -1852,9 +1900,9 @@ summary(lm.base)</code></pre>
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 150.2 on 297 degrees of freedom
-## Multiple R-squared:  0.9876, Adjusted R-squared:  0.9845 
-## F-statistic: 319.2 on 74 and 297 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 152.1 on 279 degrees of freedom
+## Multiple R-squared:  0.988,  Adjusted R-squared:  0.9841 
+## F-statistic: 250.5 on 92 and 279 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 <div id="conclusions" class="section level2">
 <h2>Conclusions</h2>

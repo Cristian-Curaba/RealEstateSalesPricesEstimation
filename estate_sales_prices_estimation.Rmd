@@ -20,11 +20,11 @@ knitr::opts_chunk$set(
 
 The [**Residential Building Data Set**](https://archive.ics.uci.edu/ml/datasets/Residential+Building+Data+Set)
 has been donated by Ph.D. Mohammad H. Rafiei from The Ohio State University,
-Columbus, and includes 372 observations about real estate single-family
+Columbus, and includes $372$ observations about real estate single-family
 residential apartments in Tehran, Iran. In particular, for each apartment are
-reported 8 project physical and financial variables and 19 economic variables
-and indices. This 19 features are reported in 5 time lag^[The number of
-*time resolutions* before the start of the project.], leading a total of 103
+reported $8$ project physical and financial variables and $19$ economic variables
+and indices. This $19$ features are reported in $5$ time lag^[The number of
+*time resolutions* before the start of the project.], leading a total of $103$
 possible explanatory variables for the two output variables, that are
 `ConstructionCosts` and `SalesPrices`.
 
@@ -78,18 +78,41 @@ We are now going to list all the dataframe columns and explain their meanings:
 
 * `StartYear`, `StartQuarter`, `CompletionYear` and `CompletionQuarter` are temporal
 references about the Building project. Only the last two digits of the years are
-reported, so we will ad $1300$ to each year (keeping in mind that dates are
+reported, so we will add $1300$ to each year (keeping in mind that dates are
 referring to the Persian calendar);
-* `BuildingZIPCode`, `BuildingFloorArea`, `LotArea`, `TotEstConstructionCost`,
-`EstConstructionCost`, `EstConstructionCostBaseYear`, `ConstructionDuration`,
-`PriceAtBeginning` are $\dots$;
-* `BuildingPermitsNo`, `BSI`, `WPI`, `BuildingPermitsFloorArea`, `CumulativeLiquidity`,
-`PrivateSectorInvestment`, `LandPriceIndexBaseYear`, `LoansExtendedNo`,
-`LoansExtendedAmount`, `InterestRate`, `ConstructionCostAtCompletion`,
-`ConstructionCostAtBeginning`, `OfficialExcangeRateUSD`,
-`StreetMarketExcangeRateUSD`, `CPIBaseYear`, `CPIFornituresBaseYear`,
-`StockMarketIndex`, `CityPopulation`, `GoldPriceOnce` are $\dots$;
-* `SalesPrices` and `ConstructionCosts` are $\dots$.
+* `BuildingZIPCode` is the ZIP Code where the Building is located,.
+`BuildingFloorArea` and `LotArea` are surfaces values, measured in square meters,
+referring to the construction lot. `TotEstConstructionCost`,
+`EstConstructionCost` and `EstConstructionCostBaseYear` are total construction
+cost, in ten thousands Rial (Iranian currency), actual and estimated at the
+beginning of the project (the last is also adjusted to inflation at the
+year $1383$). `ConstructionDuration` is the duration, in quarters, of the
+constructions, and `PriceAtBeginning` is the specific square root price before
+the construction start. This are Building-specific features that do not change
+during the construction period;
+* There is then a set of $19$ features that are measured at five regular
+intervals from the construction starting date and the completion date. Each of
+them will then be present in the dataframe for a total of five times.
+`BuildingPermitsNo` is the number of building permits issued, `BSI` and `WPI` are
+Building Services Index and Wholesale Price Index, `BuildingPermitsFloorArea` is
+the total floor areas, in square meters, of building permits issued by the city.
+`CumulativeLiquidity` represents, in ten milions of Rial, how rapidly different
+types of assets can be changed to cash, `PrivateSectorInvestment` is the sector
+investment in new buildings, `LandPriceIndexBaseYear` is the square root price
+in year $1383$. The columns `LoansExtendedNo`, `LoansExtendedAmount` and
+`InterestRate` refers to extended loans during the lag.
+`ConstructionCostAtCompletion` and `ConstructionCostAtBeginning` are average
+construction cost of buildings by private sector at the time of completion and
+beginning of construction. `OfficialExcangeRateUSD` and `StreetMarketExcangeRateUSD`
+are official and nonofficial (street market) exchange rate with respect to dollars.
+`CPIBaseYear` and `CPIFornituresBaseYear` are respectively total Consumer Price
+Index and CPI only related to fornitures.
+`StockMarketIndex` represent the payback condition of investment in stock market,
+`CityPopulation` the population of the city and `GoldPriceOnce` gold price, in
+Rial, per ounce;
+* `SalesPrices` and `ConstructionCosts` are the two response variables,
+indicating the final selling price of the estate and total construction costs,
+respectively. Both measures use $10000$ Rial as measure unit.
 
 Now that we understand what the individual columns refer to, we can analyze
 which variables are qualitative (ordered or not), and which are quantitative
@@ -97,8 +120,21 @@ which variables are qualitative (ordered or not), and which are quantitative
 
 The first thing that we note is that there are no qualitative columns in the
 dataset. The only columns that could be interpreted as factor column are the
-`StartQuarter` and `CompletionQuarter` ones, where only value from 1 to 4 are
-possible, and `BuildingZIPCode` with values from 1 to 20.
+`StartQuarter` and `CompletionQuarter` ones, where only value from $1$ to $4$
+are possible, and `BuildingZIPCode` with values from $1$ to $20$.
+All the other variables are continuous quantitative measures.
+
+```{r factor_columns}
+# Treat `BuildingZIPCode` variable as factor
+Constructions$BuildingZIPCode <- as.factor(Constructions$BuildingZIPCode)
+
+# We do not compute the same operation on `StartQuarter` and `CompletionQuarter`
+# columns since, as we will see in a couple of chunks, we will drop that
+# specific features.
+```
+
+Next, we proceed to check whether any records contain any missing columns.
+If so, we will decide how to handle it.
 
 ```{r missing_values}
 column_with_missing_values = c()
@@ -193,9 +229,10 @@ Constructions %>%
 ## Statistical models
 
 ```{r linear_model, echo=TRUE}
-
+# Sample linear model
 lm.base <- lm(SalesPrices ~ ., Constructions)
 
+# Print the summary of the fitted linear model
 summary(lm.base)
 ```
 
