@@ -13,10 +13,22 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
+# Set chunks properties
 knitr::opts_chunk$set(
-  eval=TRUE, echo=TRUE, warning=FALSE,
+  eval=TRUE, echo=FALSE, warning=FALSE,
   message=FALSE, fig.align='center')
+
+# Import needed libraries for the project
+library('dplyr')        # Base R package for data manipulation
+library('openxlsx')     # Allows reading Excel files from URL
+library('ggplot2')      # Allows plotting advanced graphs
+library('AER')          # Applied Econometrics package
+library('MASS')
+library('car')          # Companion to Applied Regression
+library('boot')         # Makes Bootstrap Functions available
+library('randomForest') # A rather explanatory name for a package
 ```
+
 
 ## Assignment statement
 
@@ -48,11 +60,6 @@ way. This is done by following the description of the features in the
 `Description` sheet of the Excel file.
 
 ```{r dataset_import}
-# Import needed libraries for the Features Engineering part
-library(dplyr)    # Base R package for Data Manipulation
-library(openxlsx) # Allows reading Excel files from URL
-library(ggplot2)  # Allows plotting advanced graphs
-
 # Read the Constructions data from `archive.ics.uci.edu`
 Constructions <- read.xlsx(
   'https://archive.ics.uci.edu/ml/machine-learning-databases/00437/Residential-Building-Data-Set.xlsx',
@@ -74,7 +81,7 @@ colnames(Constructions)[108:109] <- c("SalesPrices", "ConstructionCosts")
 
 # Remove the `ConstructionCosts` column from the dataframe
 Constructions <- Constructions %>% 
-  select(-c("ConstructionCosts"))
+  dplyr::select(-c("ConstructionCosts"))
 
 head(Constructions)
 ```
@@ -154,7 +161,7 @@ column_with_missing_values = c()
 
 for (column in colnames(Constructions)) {
   missing_values <- Constructions %>% 
-    select(column) %>% 
+    dplyr::select(column) %>% 
     is.na() %>% 
     sum()
   
@@ -193,17 +200,20 @@ Constructions$CompletionYear <- ( Constructions$CompletionYear + 1300 ) + .25 * 
 
 # Remove the `StartQuarter` and `CompletionQuarter` from the dataframe
 Constructions <- Constructions %>% 
-  select(-c("StartQuarter", "CompletionQuarter"))
-write.csv(Constructions, "Constructions.csv" )
+  dplyr::select(-c("StartQuarter", "CompletionQuarter"))
+
+# Write final CSV file to filesystem
+write.csv(Constructions, "./data/Constructions.csv" )
 ```
 
 We now analyze the distribution of the response variable in the dataset.
 Plotting the histogram, and analyzing mean and variance can help us.
 
 ```{r salesprices_hist}
-library(dplyr)
+# Print `SalesPrices` data summary
 summary(Constructions$SalesPrices)
 
+# Plot `SalesPrices` histogram
 Constructions %>%
   ggplot(aes(x=SalesPrices)) + 
   geom_histogram() +
@@ -225,6 +235,7 @@ skewed towards left. We can try to plot the same histogram, but applying
 a logarithmic scale to the vector of values.
 
 ```{r salesprices_log_hist}
+# Plot `SalesPrices` logarithmic histogram
 Constructions %>%
   ggplot(aes(x=SalesPrices)) +
   geom_histogram() +
@@ -244,14 +255,17 @@ Constructions %>%
 
 ## Statistical models
 
-Since there are a lot of explanatory variables, we must drop lot of them
-to avoid collinearity and over complexity.
+Since there are a lot of explanatory variables, we must drop lot of them to
+avoid collinearity and over complexity.
 
 As baseline model, we are going to consider a linear model with
-predictor variable: "price at beginning".
+`PriceAtBeginning` predictor variable.
 
-```{r}
+```{r linearmodel_baseline}
+# Attach the `Constructions` dataframe to the R search path
 attach(Constructions)
+
+# Train a simple linear model and print its summary and residuals qqplot
 baseline_linear<-lm(SalesPrices~PriceAtBeginning)
 summary(baseline_linear)
 qqnorm(baseline_linear$residuals)
@@ -261,25 +275,24 @@ We can see that the homoscedasticity hypothesis isn't satisfied so may
 be a good idea to consider a glm model with the poisson family:
 
 ```{r poisson_baseline}
-poisson_baseline<-glm(SalesPrices~PriceAtBeginning, family = poisson())
+poisson_baseline<-glm(SalesPrices~PriceAtBeginning, family=poisson())
 summary(poisson_baseline)
-library(AER)
+
 dispersiontest(poisson_baseline) #Checking overdisperion
 ```
 
-Since there's overdispersion and high residuals let's try the negative
-binomial model with link function "log" and "identity":
+Since there is overdispersion and high residuals, let's try the negative
+binomial model with `log` and `identity` link function.
 
 ```{r NegBin_baseline}
-library(MASS)
 NegBin_baseline_log<-glm.nb(SalesPrices~PriceAtBeginning, link="log", data=Constructions)
 NegBin_baseline_id<-glm.nb(SalesPrices~PriceAtBeginning, link="identity", data=Constructions)
 summary(NegBin_baseline_log)
 summary(NegBin_baseline_id)
 ```
 
-Confronting AIC and Residual we can easily choose the negative binomial
-model with link function "identity". We also tried other standard
+Confronting `AIC` and Residuals, we can easily choose the negative binomial
+model with `identity.` link function. We also tried other standard
 generalized linear model (with different link functions) without
 reporting here: they all performs worse (comparing AIC values) then the
 negative binomial with identity as link function. We would like to
@@ -295,17 +308,22 @@ as '\_5' in the dataset). Alos, with a visual inspection of the plot
 BuildingZIPCode-SalesPrices we note that some ZIP codes may be really
 useful in predicting high sales values:
 
-```{r}
-plot(as.factor(BuildingZIPCode), SalesPrices, xlab="Building ZIP codes", ylab="Sales Prices")
+```{r salesprices_plot}
+plot(BuildingZIPCode,
+     SalesPrices,
+     xlab="Building ZIP codes",
+     ylab="Sales Prices"
+     )
 ```
 
-May be a good idea to merge some of the ZIP codes that doesn't influence
+May be a good idea to merge some of the ZIP codes that does not influence
 much the prices sales. We decide to consider $4$ factors: $1,3,6$ and
 others (named $21$). Let's select select all the indexes as specified
 above:
 
 ```{r Featuring}
 attach(Constructions)
+
 ##Create NewBuildingZIPCode
 `%notin%` <- Negate(`%in%`)
 NewBuildingZIPCode=seq(1, length(BuildingZIPCode))
@@ -337,7 +355,6 @@ based on AIC using the stepwise algorithm.
 
 ```{r NegBin}
 all_index_noZIP<-c(1,2,4:10,indexes5)
-library(car)
 max_mod_NegBin <-glm.nb(as.formula(paste("SalesPrices~factor(NewBuildingZIPCode)+", paste(ColNames[all_index_noZIP], collapse="+"))), link="identity") #upper model
 
 #termplot(max_mod_NegBin, partial.resid = TRUE) #Checking if we need to rescale some feature (omitted for brevity); they all present smooth straight lines so no rescaling o GAMs needed.
@@ -397,7 +414,6 @@ The resulting model is really complex but better in predicting. We make
 a 10-cross validation to assess our models estimating the MSE errors.
 
 ```{r 10-CV}
-library(boot)
 #MSE and MSE adjusted
 cv.glm(Constructions, fit_best_NegBin, K=10)$delta #NegBin
 cv.glm(Constructions, fit_best_Gamma,K=10)$delta #Gamma
@@ -410,7 +426,6 @@ We obtain that the last model is definitely the better one.
 Let's also compare it with a random forest model (with all features).
 
 ```{r}
-library(randomForest)
 predictor_randomForest<-randomForest(SalesPrices~.-BuildingZIPCode+ factor(BuildingZIPCode), data=Constructions)
 MSE_randomForest<-mean((SalesPrices-predict(predictor_randomForest))^2)
 MSE_randomForest

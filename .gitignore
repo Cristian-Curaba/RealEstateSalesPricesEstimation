@@ -1,5 +1,9 @@
-# Assignment file
+# Ignore assignment and draft files
 assignment.html
+Models.r
+
+# macOS files
+.DS_Store
 
 # History files
 .Rhistory
