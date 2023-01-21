@@ -7,40 +7,45 @@ output:
     toc: yes
     toc_depth: '3'
     df_print: paged
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  eval=TRUE, echo=FALSE, warning=FALSE,
+  eval=TRUE, echo=TRUE, warning=FALSE,
   message=FALSE, fig.align='center')
 ```
 
-
 ## Assignment statement
 
-The [**Residential Building Data Set**](https://archive.ics.uci.edu/ml/datasets/Residential+Building+Data+Set)
-has been donated by Ph.D. Mohammad H. Rafiei from The Ohio State University,
-Columbus, and includes $372$ observations about real estate single-family
-residential apartments in Tehran, Iran. In particular, for each apartment are
-reported $8$ project physical and financial variables and $19$ economic variables
-and indices. This $19$ features are reported in $5$ time lag^[The number of
-*time resolutions* before the start of the project.], leading a total of $103$
-possible explanatory variables for the two output variables, that are
-`ConstructionCosts` and `SalesPrices`.
+The [**Residential Building Data
+Set**](https://archive.ics.uci.edu/ml/datasets/Residential+Building+Data+Set)
+has been donated by Ph.D. Mohammad H. Rafiei from The Ohio State
+University, Columbus, and includes $372$ observations about real estate
+single-family residential apartments in Tehran, Iran. In particular, for
+each apartment are reported $8$ project physical and financial variables
+and $19$ economic variables and indices. This $19$ features are reported
+in $5$ time lag[^1], leading a total of $103$ possible explanatory
+variables for the two output variables, that are `ConstructionCosts` and
+`SalesPrices`.
 
-The aim of the present project is to build an efficient pipeline to estimate
-the `SalesPrices`, observing the explanatory variables. In order to do that, we
-start by analyzing the dataset and performing some feature engineering. We then
-study some possible statistical model for the estimation. Finally, we conclude
-by summarizing the results and proposing some possible future improvement.
+[^1]: The number of *time resolutions* before the start of the project.
 
+The aim of the present project is to build an efficient pipeline to
+estimate the `SalesPrices`, observing the explanatory variables. In
+order to do that, we start by analyzing the dataset and performing some
+feature engineering. We then study some possible statistical model for
+the estimation. Finally, we conclude by summarizing the results and
+proposing some possible future improvement.
 
 ## Data analysis
 
-The first thing we do after importing the dataset from the original repository
-is to rename the columns in a more friendly and informative way. This is done by
-following the description of the features in the `Description` sheet of the
-Excel file.
+The first thing we do after importing the dataset from the original
+repository is to rename the columns in a more friendly and informative
+way. This is done by following the description of the features in the
+`Description` sheet of the Excel file.
 
 ```{r dataset_import}
 # Import needed libraries for the Features Engineering part
@@ -74,55 +79,63 @@ Constructions <- Constructions %>%
 head(Constructions)
 ```
 
-We are now going to list all the dataframe columns and explain their meanings:
+We are now going to list all the dataframe columns and explain their
+meanings:
 
-* `StartYear`, `StartQuarter`, `CompletionYear` and `CompletionQuarter` are temporal
-references about the Building project. Only the last two digits of the years are
-reported, so we will add $1300$ to each year (keeping in mind that dates are
-referring to the Persian calendar);
-* `BuildingZIPCode` is the ZIP Code where the Building is located,.
-`BuildingFloorArea` and `LotArea` are surfaces values, measured in square meters,
-referring to the construction lot. `TotEstConstructionCost`,
-`EstConstructionCost` and `EstConstructionCostBaseYear` are total construction
-cost, in ten thousands Rial (Iranian currency), actual and estimated at the
-beginning of the project (the last is also adjusted to inflation at the
-year $1383$). `ConstructionDuration` is the duration, in quarters, of the
-constructions, and `PriceAtBeginning` is the specific square root price before
-the construction start. This are Building-specific features that do not change
-during the construction period;
-* There is then a set of $19$ features that are measured at five regular
-intervals from the construction starting date and the completion date. Each of
-them will then be present in the dataframe for a total of five times.
-`BuildingPermitsNo` is the number of building permits issued, `BSI` and `WPI` are
-Building Services Index and Wholesale Price Index, `BuildingPermitsFloorArea` is
-the total floor areas, in square meters, of building permits issued by the city.
-`CumulativeLiquidity` represents, in ten milions of Rial, how rapidly different
-types of assets can be changed to cash, `PrivateSectorInvestment` is the sector
-investment in new buildings, `LandPriceIndexBaseYear` is the square root price
-in year $1383$. The columns `LoansExtendedNo`, `LoansExtendedAmount` and
-`InterestRate` refers to extended loans during the lag.
-`ConstructionCostAtCompletion` and `ConstructionCostAtBeginning` are average
-construction cost of buildings by private sector at the time of completion and
-beginning of construction. `OfficialExcangeRateUSD` and `StreetMarketExcangeRateUSD`
-are official and nonofficial (street market) exchange rate with respect to dollars.
-`CPIBaseYear` and `CPIFornituresBaseYear` are respectively total Consumer Price
-Index and CPI only related to fornitures.
-`StockMarketIndex` represent the payback condition of investment in stock market,
-`CityPopulation` the population of the city and `GoldPriceOnce` gold price, in
-Rial, per ounce;
-* `SalesPrices` and `ConstructionCosts` are the two response variables,
-indicating the final selling price of the estate and total construction costs,
-respectively. Both measures use $10000$ Rial as measure unit.
+-   `StartYear`, `StartQuarter`, `CompletionYear` and
+    `CompletionQuarter` are temporal references about the Building
+    project. Only the last two digits of the years are reported, so we
+    will add $1300$ to each year (keeping in mind that dates are
+    referring to the Persian calendar);
+-   `BuildingZIPCode` is the ZIP Code where the Building is located,.
+    `BuildingFloorArea` and `LotArea` are surfaces values, measured in
+    square meters, referring to the construction lot.
+    `TotEstConstructionCost`, `EstConstructionCost` and
+    `EstConstructionCostBaseYear` are total construction cost, in ten
+    thousands Rial (Iranian currency), actual and estimated at the
+    beginning of the project (the last is also adjusted to inflation at
+    the year $1383$). `ConstructionDuration` is the duration, in
+    quarters, of the constructions, and `PriceAtBeginning` is the
+    specific square root price before the construction start. This are
+    Building-specific features that do not change during the
+    construction period;
+-   There is then a set of $19$ features that are measured at five
+    regular intervals from the construction starting date and the
+    completion date. Each of them will then be present in the dataframe
+    for a total of five times. `BuildingPermitsNo` is the number of
+    building permits issued, `BSI` and `WPI` are Building Services Index
+    and Wholesale Price Index, `BuildingPermitsFloorArea` is the total
+    floor areas, in square meters, of building permits issued by the
+    city. `CumulativeLiquidity` represents, in ten milions of Rial, how
+    rapidly different types of assets can be changed to cash,
+    `PrivateSectorInvestment` is the sector investment in new buildings,
+    `LandPriceIndexBaseYear` is the square root price in year $1383$.
+    The columns `LoansExtendedNo`, `LoansExtendedAmount` and
+    `InterestRate` refers to extended loans during the lag.
+    `ConstructionCostAtCompletion` and `ConstructionCostAtBeginning` are
+    average construction cost of buildings by private sector at the time
+    of completion and beginning of construction.
+    `OfficialExcangeRateUSD` and `StreetMarketExcangeRateUSD` are
+    official and nonofficial (street market) exchange rate with respect
+    to dollars. `CPIBaseYear` and `CPIFornituresBaseYear` are
+    respectively total Consumer Price Index and CPI only related to
+    fornitures. `StockMarketIndex` represent the payback condition of
+    investment in stock market, `CityPopulation` the population of the
+    city and `GoldPriceOnce` gold price, in Rial, per ounce;
+-   `SalesPrices` and `ConstructionCosts` are the two response
+    variables, indicating the final selling price of the estate and
+    total construction costs, respectively. Both measures use $10000$
+    Rial as measure unit.
 
-Now that we understand what the individual columns refer to, we can analyze
-which variables are qualitative (ordered or not), and which are quantitative
-(discrete or continuous).
+Now that we understand what the individual columns refer to, we can
+analyze which variables are qualitative (ordered or not), and which are
+quantitative (discrete or continuous).
 
-The first thing that we note is that there are no qualitative columns in the
-dataset. The only columns that could be interpreted as factor column are the
-`StartQuarter` and `CompletionQuarter` ones, where only value from $1$ to $4$
-are possible, and `BuildingZIPCode` with values from $1$ to $20$.
-All the other variables are continuous quantitative measures.
+The first thing that we note is that there are no qualitative columns in
+the dataset. The only columns that could be interpreted as factor column
+are the `StartQuarter` and `CompletionQuarter` ones, where only value
+from $1$ to $4$ are possible, and `BuildingZIPCode` with values from $1$
+to $20$. All the other variables are continuous quantitative measures.
 
 ```{r factor_columns}
 # Treat `BuildingZIPCode` variable as factor
@@ -133,8 +146,8 @@ Constructions$BuildingZIPCode <- as.factor(Constructions$BuildingZIPCode)
 # specific features.
 ```
 
-Next, we proceed to check whether any records contain any missing columns.
-If so, we will decide how to handle it.
+Next, we proceed to check whether any records contain any missing
+columns. If so, we will decide how to handle it.
 
 ```{r missing_values}
 column_with_missing_values = c()
@@ -160,16 +173,18 @@ if (length(column_with_missing_values) > 0) {
 rm(column, missing_values, column_with_missing_values)
 ```
 
-Fortunately, there are no columns where missing values occur. This can be
-because a preventive data cleaning has been done by the person who uploaded the
-dataframe on the public repository, or because the data collection method was
-meticulous and error-free. We lean toward the first of the two options.
+Fortunately, there are no columns where missing values occur. This can
+be because a preventive data cleaning has been done by the person who
+uploaded the dataframe on the public repository, or because the data
+collection method was meticulous and error-free. We lean toward the
+first of the two options.
 
-We note that we could implode years and quarters information into a single value,
-one for starting date and one for completion date. This is done by simply adding
-$.25$ to each year value for each ended quarter of the current year at the start
-(or completion) of the project. In this way, the first quarter of the $x$ year
-will be $x.00$, the second quarter will be $x.25$, and so on.
+We note that we could implode years and quarters information into a
+single value, one for starting date and one for completion date. This is
+done by simply adding $.25$ to each year value for each ended quarter of
+the current year at the start (or completion) of the project. In this
+way, the first quarter of the $x$ year will be $x.00$, the second
+quarter will be $x.25$, and so on.
 
 ```{r feature_engineering}
 # Explode the Years (abbreviated to the last two digits in the original dataframe) and add .25 year per Quarter
@@ -179,12 +194,14 @@ Constructions$CompletionYear <- ( Constructions$CompletionYear + 1300 ) + .25 * 
 # Remove the `StartQuarter` and `CompletionQuarter` from the dataframe
 Constructions <- Constructions %>% 
   select(-c("StartQuarter", "CompletionQuarter"))
+write.csv(Constructions, "Constructions.csv" )
 ```
 
 We now analyze the distribution of the response variable in the dataset.
 Plotting the histogram, and analyzing mean and variance can help us.
 
 ```{r salesprices_hist}
+library(dplyr)
 summary(Constructions$SalesPrices)
 
 Constructions %>%
@@ -203,13 +220,13 @@ Constructions %>%
   theme_classic()
 ```
 
-The distribution of `SalesPrices` values in the dataframe is highly skewed
-towards left. We can try to plot the same histogram, but applying a logarithmic
-scale to the vector of values.
+The distribution of `SalesPrices` values in the dataframe is highly
+skewed towards left. We can try to plot the same histogram, but applying
+a logarithmic scale to the vector of values.
 
 ```{r salesprices_log_hist}
 Constructions %>%
-  ggplot(aes(x=SalesPrices)) + 
+  ggplot(aes(x=SalesPrices)) +
   geom_histogram() +
   scale_x_log10() +
   geom_vline(aes(xintercept=mean(SalesPrices),color='mean'), linetype="dashed", size=.5) +
@@ -225,16 +242,183 @@ Constructions %>%
   theme_classic()
 ```
 
-
 ## Statistical models
 
-```{r linear_model, echo=TRUE}
-# Sample linear model
-lm.base <- lm(SalesPrices ~ ., Constructions)
+Since there are a lot of explanatory variables, we must drop lot of them
+to avoid collinearity and over complexity.
 
-# Print the summary of the fitted linear model
-summary(lm.base)
+As baseline model, we are going to consider a linear model with
+predictor variable: "price at beginning".
+
+```{r}
+attach(Constructions)
+baseline_linear<-lm(SalesPrices~PriceAtBeginning)
+summary(baseline_linear)
+qqnorm(baseline_linear$residuals)
 ```
 
-## Conclusions
+We can see that the homoscedasticity hypothesis isn't satisfied so may
+be a good idea to consider a glm model with the poisson family:
 
+```{r poisson_baseline}
+poisson_baseline<-glm(SalesPrices~PriceAtBeginning, family = poisson())
+summary(poisson_baseline)
+library(AER)
+dispersiontest(poisson_baseline) #Checking overdisperion
+```
+
+Since there's overdispersion and high residuals let's try the negative
+binomial model with link function "log" and "identity":
+
+```{r NegBin_baseline}
+library(MASS)
+NegBin_baseline_log<-glm.nb(SalesPrices~PriceAtBeginning, link="log", data=Constructions)
+NegBin_baseline_id<-glm.nb(SalesPrices~PriceAtBeginning, link="identity", data=Constructions)
+summary(NegBin_baseline_log)
+summary(NegBin_baseline_id)
+```
+
+Confronting AIC and Residual we can easily choose the negative binomial
+model with link function "identity". We also tried other standard
+generalized linear model (with different link functions) without
+reporting here: they all performs worse (comparing AIC values) then the
+negative binomial with identity as link function. We would like to
+mention the gamma family with identity as link function: it performs
+nearly the same. So we decided to consider both models and then choose
+the best. To find the best features we consider an automatic stepwise
+algorithm to choose a model by AIC. Since we may avoid some rough
+collinearity we decided to feed the algorithm with an upper model
+containing just some of the $19$ features that are measured through
+time. With a brief analysis (omitted here for the sake of brevity) we
+decided to consider just the indexes at the building completion (marked
+as '\_5' in the dataset). Alos, with a visual inspection of the plot
+BuildingZIPCode-SalesPrices we note that some ZIP codes may be really
+useful in predicting high sales values:
+
+```{r}
+plot(as.factor(BuildingZIPCode), SalesPrices, xlab="Building ZIP codes", ylab="Sales Prices")
+```
+
+May be a good idea to merge some of the ZIP codes that doesn't influence
+much the prices sales. We decide to consider $4$ factors: $1,3,6$ and
+others (named $21$). Let's select select all the indexes as specified
+above:
+
+```{r Featuring}
+attach(Constructions)
+##Create NewBuildingZIPCode
+`%notin%` <- Negate(`%in%`)
+NewBuildingZIPCode=seq(1, length(BuildingZIPCode))
+for (j in 1:length(BuildingZIPCode)){
+  if(BuildingZIPCode[j] %notin% c(1,3,6)){
+NewBuildingZIPCode[j]<-21;}
+  else {NewBuildingZIPCode[j]<-BuildingZIPCode[j]}
+}
+rm(j)
+##
+
+##Binding it at the dataframe
+Constructions<-cbind(Constructions, NewBuildingZIPCode)
+
+##Building indexes5 containing only the environment indexes at completion time##
+ColNames<-colnames(Constructions)
+j=1;
+indexes5<-0;
+for (i in 1:length(ColNames)){
+  if(grepl('_5', ColNames[i])){indexes5[j]<-i; j<-j+1;}
+}
+rm(j)
+rm(i)
+##
+```
+
+Now let's build the two best model (with Gamma and Negative Binomial)
+based on AIC using the stepwise algorithm.
+
+```{r NegBin}
+all_index_noZIP<-c(1,2,4:10,indexes5)
+library(car)
+max_mod_NegBin <-glm.nb(as.formula(paste("SalesPrices~factor(NewBuildingZIPCode)+", paste(ColNames[all_index_noZIP], collapse="+"))), link="identity") #upper model
+
+#termplot(max_mod_NegBin, partial.resid = TRUE) #Checking if we need to rescale some feature (omitted for brevity); they all present smooth straight lines so no rescaling o GAMs needed.
+
+min_mod_NegBin <-glm.nb(SalesPrices~ PriceAtBeginning, link="identity") #lower model
+```
+
+```{r fitting neg bin, results='hide', message=FALSE}
+fit_best_NegBin<-step(min_mod_NegBin, scope=list(lower=min_mod_NegBin, upper=max_mod_NegBin), direction = "both") #Best fitting 
+```
+
+```{r summaries NegBin }
+vif(fit_best_NegBin) #Checking collinearity
+summary(fit_best_NegBin)
+plot(fit_best_NegBin)
+```
+
+A future improvement can be done eliminating collinearity to comprehend
+the real impact of each feature.
+
+Let's make the same work with the gamma family and just see the results.
+
+```{r, echo=FALSE}
+max_mod_Gamma <-glm(as.formula(paste("SalesPrices~factor(NewBuildingZIPCode)+", paste(ColNames[all_index_noZIP], collapse="+"))), family = Gamma(link="identity"))
+min_mod_Gamma <-glm(SalesPrices~ PriceAtBeginning, family=Gamma(link="identity"))
+```
+
+```{r fitting gamma model, results='hide', message=FALSE}
+fit_best_Gamma<-step(min_mod_Gamma, scope=list(lower=min_mod_Gamma, upper=max_mod_Gamma), direction = "both")
+```
+
+```{r summaries gamma model}
+summary(fit_best_Gamma)
+plot(fit_best_Gamma)
+```
+
+We confronting AIC and plots the best model is the gamma with identity
+link function.
+
+At cost of interpretability we can also build the model using all the
+environment indexes (and the original building ZIP codes) and see if the
+model improves.
+
+```{r, echo=FALSE}
+max_mod_Gamma_all <-glm(SalesPrices~., family=Gamma(link="identity"),data=Constructions)
+```
+
+```{r fitting gamma model all, results='hide', message=FALSE}
+fit_best_Gamma_all<-step(min_mod_Gamma, scope=list(lower=min_mod_Gamma, upper=max_mod_Gamma_all), direction = "both")
+```
+
+```{r summaries gamma model all}
+summary(fit_best_Gamma_all)
+```
+
+The resulting model is really complex but better in predicting. We make
+a 10-cross validation to assess our models estimating the MSE errors.
+
+```{r 10-CV}
+library(boot)
+#MSE and MSE adjusted
+cv.glm(Constructions, fit_best_NegBin, K=10)$delta #NegBin
+cv.glm(Constructions, fit_best_Gamma,K=10)$delta #Gamma
+cv.glm(Constructions, fit_best_Gamma_all, K=10)$delta #Gamma_all
+
+```
+
+We obtain that the last model is definitely the better one.
+
+Let's also compare it with a random forest model (with all features).
+
+```{r}
+library(randomForest)
+predictor_randomForest<-randomForest(SalesPrices~.-BuildingZIPCode+ factor(BuildingZIPCode), data=Constructions)
+MSE_randomForest<-mean((SalesPrices-predict(predictor_randomForest))^2)
+MSE_randomForest
+varImpPlot(predictor_randomForest)
+
+```
+
+We can see that the MSE error is way bigger than the last one. A brief
+look at the variable importance plot may be informative.
+
+## Conclusions
