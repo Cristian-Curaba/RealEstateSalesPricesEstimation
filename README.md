@@ -17,17 +17,18 @@ More specifically, the request is to study possible statistical models to predic
 ## Organization of work
 
 The project has been divided into sub-problems and resolved as follows:
-* Enrico Stefanel ([@enstit](https://github.com/enstit)): problem statement, exploratory
-  data analysis and data-cleaning phase;
-* Cristian Curaba ([@Cristian-Curaba](https://github.com/Cristian-Curaba)): selection, description
-    and comparison of most suitable models;
+* Enrico Stefanel ([@enstit](https://github.com/enstit)): problem statement,
+  exploratory data analysis and data-cleaning phase;
+* Cristian Curaba ([@Cristian-Curaba](https://github.com/Cristian-Curaba)):
+  selection, description and comparison of most suitable models;
 * Yaiza Martínez Jiménez: comments on results.
 
 
 ## Usage
 
-The `estate_sales_prices_estimation.Rmd` file contains all the project analysis.
-A rendered version of it can be found into the HTML file with the same name.\
+The [.Rmd file](./estate_sales_prices_estimation.Rmd) contains all the project
+analysis. A rendered version of it can be found into the [HTML file](./estate_sales_prices_estimation.html)
+with the same name.\
 In order to successfully run all the code, you need to install some R packages
 (if not already installed on your system):
 
