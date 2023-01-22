@@ -23,7 +23,7 @@ library('dplyr')        # Base R package for data manipulation
 library('openxlsx')     # Allows reading Excel files from URL
 library('ggplot2')      # Allows plotting advanced graphs
 library('AER')          # Applied Econometrics package
-library('MASS')
+library('MASS')         # Includes useful functions for linear models evaluation
 library('car')          # Companion to Applied Regression
 library('boot')         # Makes Bootstrap Functions available
 library('randomForest') # A rather explanatory name for a package
@@ -151,7 +151,7 @@ to $20$. All the other variables are continuous quantitative measures.
 
 ```{r factor_columns}
 # Treat `BuildingZIPCode` variable as factor
-Constructions$BuildingZIPCode <- as.factor(Constructions$BuildingZIPCode)
+# Constructions$BuildingZIPCode <- as.factor(Constructions$BuildingZIPCode)
 
 # We do not compute the same operation on `StartQuarter` and `CompletionQuarter`
 # columns since, as we will see in a couple of chunks, we will drop that
@@ -235,8 +235,8 @@ Constructions %>%
   theme_classic()
 ```
 
-The distribution of `SalesPrices` values in the dataframe is highly
-skewed towards left. We can try to plot the same histogram, but applying
+The distribution of `SalesPrices` values in the dataframe is highly skewed
+towards left. We can try to plot the same histogram, but applying
 a logarithmic scale to the vector of values.
 
 ```{r salesprices_log_hist}
@@ -258,10 +258,94 @@ Constructions %>%
   theme_classic()
 ```
 
+We see that the distribution of the log-scaled `SalesPrices` can somehow remember
+a normal distribution.
+
+It is also very useful to study possible correlations in the dataset between the
+response variable and the independent variables.
+
+To do so, let's analyze the top three positively and top three negatively
+correlated columns with `SalesPrices`, with relative covariances:
+
+```{r column_correlations}
+cor <- cor(Constructions[ , colnames(Constructions) != "SalesPrices"], Constructions$SalesPrices)
+
+head(cor[order(cor[,1], decreasing = TRUE), ], n=3)
+tail(cor[order(cor[,1], decreasing = TRUE), ], n=3)
+```
+
+It is straightforward to note that `PriceAtBeginning` has a really high correlation
+with the response variable. Recall that `PriceAtBeginning` column is the price
+of the building unit at the beginning of the project.
+The relation is evident if we draw the scatter plot of the two variables.
+
+```{r column_correlations_plot}
+# Plot the scatter plot between `PriceAtBeginning` and `SalesPrices`
+Constructions %>%
+  ggplot(aes(x=PriceAtBeginning, y=SalesPrices)) + 
+  geom_point() +
+#  scale_x_log10() +
+#  scale_y_log10() +
+  stat_smooth(method="lm",formula=y~x, se=FALSE) +
+  labs(
+    title='PriceAtBeginning-SalesPrices correlation plot',
+    subtitle='Correlation between Price at construction begin and Sales prices in the Constructions dataframe',
+    caption="Data from archive.ics.uci.edu",
+    x=expression("Price at construction begin (" %*% ~ 10^4 ~ "Rial)" ),
+    y=expression("Sales prices (" %*% ~ 10^4 ~ "Rial)" )
+  ) +
+  theme_classic()
+```
+
+As for negative correlations, `BuildingZIPCode` reports a $-0.44$ index of
+correlation. This may suggest that high-ZIP code buildings report minor
+final `SalesPrices`, adjusted for the others variables.
+
+```{r zipcodes_boxplot}
+Constructions %>%
+  ggplot(aes(x=as.factor(BuildingZIPCode), y=SalesPrices)) + 
+  geom_boxplot() +
+  labs(
+    title='SalesPrices by BuildingZIPCode',
+    caption="Data from archive.ics.uci.edu",
+    x=expression("BuildingZIPCode" ),
+    y=expression("Sales prices (" %*% ~ 10^4 ~ "Rial)" )
+  ) +
+  theme_classic()
+```
+
+With a visual inspection of the relation, we note that some ZIP codes are more
+influential than others in predicting the `SalesPrices` response.
+We decide to summary `BuildingZIPCode` information into four main groups: ZIP
+Codes number $1$, $3$, $6$ and other ZIP Codes (named $21$).
+
+```{r zipcodes_featuring}
+# Functions that returns the original value is ZIPCode equals 1, 3 or 6,
+# and 21 otherwise.
+newBuildingZIPCode <- function(ZIPCode) {
+    if (ZIPCode %in% c(1,3,6)) {
+        ZIPCode
+    }
+    else {
+        21
+    }
+}
+
+# Apply the `newBuildingZIPCode` function to each `BuildingZIPCode` observation
+Constructions$BuildingZIPCode <- sapply(Constructions$BuildingZIPCode, newBuildingZIPCode)
+Constructions$BuildingZIPCode <- as.factor(Constructions$BuildingZIPCode)
+
+rm(newBuildingZIPCode)
+
+# View the dataset head after the features ingeneering part
+head(Constructions)
+```
+
+
 ## Statistical models
 
 Since there are a lot of explanatory variables, we must drop lot of them to
-avoid collinearity and over-complexity.
+avoid multicollinearity and over-complexity.
 
 As baseline model, we are going to consider a linear model with
 `PriceAtBeginning` predictor variable.
@@ -309,40 +393,10 @@ collinearity, we decided to feed the algorithm with an upper model
 containing just some of the $19$ features that are measured through
 time. With a brief analysis (omitted here for the sake of brevity) we
 decided to consider just the indexes at the building completion (marked
-as '\_5' in the dataset). Also, with a visual inspection of the
-`BuildingZIPCode`-`SalesPrices` relation, we note that some ZIP codes may be
-really useful in predicting high sales values.
+as '\_5' in the dataset).
 
-```{r salesprices_plot}
-plot(BuildingZIPCode,
-     SalesPrices,
-     xlab="Building ZIP codes",
-     ylab="Sales Prices"
-     )
-```
-
-May be a good idea to merge some of the ZIP codes that does not influence
-much the prices sales. We decide to consider $4$ factors: $1,3,6$ and
-others (named $21$). Let's select all the indexes as specified above:
-
-```{r Featuring}
-attach(Constructions)
-
-##Create NewBuildingZIPCode
-`%notin%` <- Negate(`%in%`)
-NewBuildingZIPCode=seq(1, length(BuildingZIPCode))
-for (j in 1:length(BuildingZIPCode)){
-  if(BuildingZIPCode[j] %notin% c(1,3,6)){
-NewBuildingZIPCode[j]<-21;}
-  else {NewBuildingZIPCode[j]<-BuildingZIPCode[j]}
-}
-rm(j)
-##
-
-##Binding it at the dataframe
-Constructions<-cbind(Constructions, NewBuildingZIPCode)
-
-##Building indexes5 containing only the environment indexes at completion time##
+```{r}
+##Building indexes5 containing only the environment indexes at completion time
 ColNames<-colnames(Constructions)
 j=1;
 indexes5<-0;
@@ -351,7 +405,6 @@ for (i in 1:length(ColNames)){
 }
 rm(j)
 rm(i)
-##
 ```
 
 Now let's build the two best model (with Gamma and Negative Binomial)
@@ -359,7 +412,7 @@ based on AIC using the stepwise algorithm.
 
 ```{r NegBin}
 all_index_noZIP<-c(1,2,4:10,indexes5)
-max_mod_NegBin <-glm.nb(as.formula(paste("SalesPrices~factor(NewBuildingZIPCode)+", paste(ColNames[all_index_noZIP], collapse="+"))), link="identity") #upper model
+max_mod_NegBin <-glm.nb(SalesPrices~., data=Constructions, link="identity") #upper model
 
 #termplot(max_mod_NegBin, partial.resid = TRUE) #Checking if we need to rescale some feature (omitted for brevity); they all present smooth straight lines so no rescaling o GAMs needed.
 
@@ -382,7 +435,7 @@ the real impact of each feature.
 Let's make the same work with the gamma family and just see the results.
 
 ```{r gamma_model}
-max_mod_Gamma <-glm(as.formula(paste("SalesPrices~factor(NewBuildingZIPCode)+", paste(ColNames[all_index_noZIP], collapse="+"))), family = Gamma(link="identity"))
+max_mod_Gamma <-glm(SalesPrices~., data=Constructions, family = Gamma(link="identity"))
 min_mod_Gamma <-glm(SalesPrices~ PriceAtBeginning, family=Gamma(link="identity"))
 
 fit_best_Gamma<-step(min_mod_Gamma, scope=list(lower=min_mod_Gamma, upper=max_mod_Gamma), direction = "both")
@@ -420,11 +473,10 @@ We obtain that the last model is definitely the better one.
 Let's also compare it with a random forest model (keeping all the features).
 
 ```{r}
-predictor_randomForest<-randomForest(SalesPrices~.-BuildingZIPCode+factor(BuildingZIPCode), data=Constructions)
+predictor_randomForest<-randomForest(SalesPrices~., data=Constructions)
 MSE_randomForest<-mean((SalesPrices-predict(predictor_randomForest))^2)
 MSE_randomForest
 varImpPlot(predictor_randomForest)
-
 ```
 
 We can see that the MSE error is way bigger than the last one. A brief
@@ -460,7 +512,11 @@ terms of AIC values and collinearity.
 
 In the case of the negative binomial model, when checking the collinearity we
 see that there are variables with high VIF values and therefore the model could
-be improved by eliminating the collinearity. After developing the two models and
+be improved by eliminating the collinearity.When building these model, if we focus on the variables with low VIF value (less than 5) such as `ConstructionDuration`, `LoansExtendedNo_1`or `BuildingPermitsNo_4` and look at their p-values, we can see that these predictor variables are statistically significant at the 0.05 significance level and thus would be quite fundamental for a good fit.
+
+In the case of the gamma model, if we look at the p-values of the variables mentioned above, we can see that they are values well below 0.05 and are therefore even more significant.
+
+After developing the two models and
 comparing the AIC values and the plots, we conclude that the best model is the
 gamma model with the identity link function.
 

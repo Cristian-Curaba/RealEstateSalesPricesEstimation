@@ -1,7 +1,7 @@
-# Estimation of Iranian Real Estate Units Sale Prices
+# Estimation of Iranian Real Estate Units Sales Prices
 
 This repository contains the code for the (group M) final project of A.Y. 2022-2023
-Professor Nicola Torelli and Professor Gioia di Credico's course on **Statistical
+Professor Nicola Torelli and Professor Gioia Di Credico's course on **Statistical
 Methods for Data Science** at the University of Trieste in the A.Y. 2022-2023.
 
 
@@ -11,7 +11,7 @@ It is required to analyze the [Residential Building Data Set](https://archive.ic
 containing data about Iranian real estate single-family residential apartments
 constructions building data.\
 More specifically, the request is to study possible statistical models to predict
-`SalesPrice` as response variable.
+`SalesPrice` as response variable, givent the other explanatory variables.
 
 
 ## Organization of work
