@@ -11,7 +11,7 @@ It is required to analyze the [Residential Building Data Set](https://archive.ic
 containing data about Iranian real estate single-family residential apartments
 constructions building data.\
 More specifically, the request is to study possible statistical models to predict
-`SalesPrice` as response variable, givent the other explanatory variables.
+`SalesPrice` as response variable, given the other explanatory variables.
 
 
 ## Organization of work
