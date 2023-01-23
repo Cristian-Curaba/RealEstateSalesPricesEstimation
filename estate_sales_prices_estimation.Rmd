@@ -29,7 +29,6 @@ library('boot')         # Makes Bootstrap Functions available
 library('randomForest') # A rather explanatory name for a package
 ```
 
-
 ## Assignment statement
 
 The [**Residential Building Data
@@ -46,23 +45,23 @@ variables for the two output variables, that are `ConstructionCosts` and
 [^1]: The number of *time resolutions* before the start of the project.
 
 The aim of the present project is to build an efficient pipeline to
-estimate the `SalesPrices`, observing the explanatory variables. Following the
-Occam’s razor principle (*pluralitas non est ponenda sine necessitate*,
-"plurality should not be posited without necessity"), , our aim is to get an
-easily interpretable model, rather than a very complex one but difficult to understand.
-In order to do that, we start by analyzing the dataset and performing some
-feature engineering. We then study some possible statistical model for
-the estimation. Finally, we conclude by summarizing the results and
-proposing some possible future improvement.
-
+estimate the `SalesPrices`, observing the explanatory variables.
+Following the Occam's razor principle (*pluralitas non est ponenda sine
+necessitate*, "plurality should not be posited without necessity"), ,
+our aim is to get an easily interpretable model, rather than a very
+complex one but difficult to understand. In order to do that, we start
+by analyzing the dataset and performing some feature engineering. We
+then study some possible statistical model for the estimation. Finally,
+we conclude by summarizing the results and proposing some possible
+future improvement.
 
 ## Data analysis
 
 The first thing we do after importing the dataset from the original
 repository is to rename the columns in a more friendly and informative
 way. This is done by following the description of the features in the
-`Description` sheet of the Excel file from the `https://archive.ics.uci.edu`
-archive.
+`Description` sheet of the Excel file from the
+`https://archive.ics.uci.edu` archive.
 
 ```{r dataset_import}
 # Read the Constructions data from `archive.ics.uci.edu`
@@ -208,7 +207,7 @@ Constructions <- Constructions %>%
   dplyr::select(-c("StartQuarter", "CompletionQuarter"))
 
 # Write final CSV file to filesystem
-write.csv(Constructions, "./data/Constructions.csv" )
+#write.csv(Constructions, "./data/Constructions.csv" )
 ```
 
 We now analyze the distribution of the response variable in the dataset.
@@ -235,8 +234,8 @@ Constructions %>%
   theme_classic()
 ```
 
-The distribution of `SalesPrices` values in the dataframe is highly skewed
-towards left. We can try to plot the same histogram, but applying
+The distribution of `SalesPrices` values in the dataframe is highly
+skewed towards left. We can try to plot the same histogram, but applying
 a logarithmic scale to the vector of values.
 
 ```{r salesprices_log_hist}
@@ -258,14 +257,15 @@ Constructions %>%
   theme_classic()
 ```
 
-We see that the distribution of the log-scaled `SalesPrices` can somehow remember
-a normal distribution.
+We see that the distribution of the log-scaled `SalesPrices` can somehow
+remember a normal distribution.
 
-It is also very useful to study possible correlations in the dataset between the
-response variable and the independent variables.
+It is also very useful to study possible correlations in the dataset
+between the response variable and the independent variables.
 
-To do so, let's analyze the top three positively and top three negatively
-correlated columns with `SalesPrices`, with relative covariances:
+To do so, let's analyze the top three positively and top three
+negatively correlated columns with `SalesPrices`, with relative
+covariances:
 
 ```{r column_correlations}
 cor <- cor(Constructions[ , colnames(Constructions) != "SalesPrices"], Constructions$SalesPrices)
@@ -274,10 +274,11 @@ head(cor[order(cor[,1], decreasing = TRUE), ], n=3)
 tail(cor[order(cor[,1], decreasing = TRUE), ], n=3)
 ```
 
-It is straightforward to note that `PriceAtBeginning` has a really high correlation
-with the response variable. Recall that `PriceAtBeginning` column is the price
-of the building unit at the beginning of the project.
-The relation is evident if we draw the scatter plot of the two variables.
+It is straightforward to note that `PriceAtBeginning` has a really high
+correlation with the response variable. Recall that `PriceAtBeginning`
+column is the price of the building unit at the beginning of the
+project. The relation is evident if we draw the scatter plot of the two
+variables.
 
 ```{r column_correlations_plot}
 # Plot the scatter plot between `PriceAtBeginning` and `SalesPrices`
@@ -297,9 +298,9 @@ Constructions %>%
   theme_classic()
 ```
 
-As for negative correlations, `BuildingZIPCode` reports a $-0.44$ index of
-correlation. This may suggest that high-ZIP code buildings report minor
-final `SalesPrices`, adjusted for the others variables.
+As for negative correlations, `BuildingZIPCode` reports a $-0.44$ index
+of correlation. This may suggest that high-ZIP code buildings report
+minor final `SalesPrices`, adjusted for the others variables.
 
 ```{r zipcodes_boxplot}
 Constructions %>%
@@ -314,10 +315,11 @@ Constructions %>%
   theme_classic()
 ```
 
-With a visual inspection of the relation, we note that some ZIP codes are more
-influential than others in predicting the `SalesPrices` response.
-We decide to summary `BuildingZIPCode` information into four main groups: ZIP
-Codes number $1$, $3$, $6$ and other ZIP Codes (named $21$).
+With a visual inspection of the relation, we note that some ZIP codes
+are more influential than others in predicting the `SalesPrices`
+response. We decide to summary `BuildingZIPCode` information into four
+main groups: ZIP Codes number $1$, $3$, $6$ and other ZIP Codes (named
+$21$).
 
 ```{r zipcodes_featuring}
 # Functions that returns the original value is ZIPCode equals 1, 3 or 6,
@@ -341,11 +343,10 @@ rm(newBuildingZIPCode)
 head(Constructions)
 ```
 
-
 ## Statistical models
 
-Since there are a lot of explanatory variables, we must drop lot of them to
-avoid multicollinearity and over-complexity.
+Since there are a lot of explanatory variables, we must drop lot of them
+to avoid multicollinearity and over-complexity.
 
 As baseline model, we are going to consider a linear model with
 `PriceAtBeginning` predictor variable.
@@ -360,8 +361,9 @@ summary(baseline_linear)
 qqnorm(baseline_linear$residuals)
 ```
 
-We can see that the homoscedasticity hypothesis is not satisfied. It may be a
-good idea to consider a Generalized Linear Model of the `poisson` family:
+We can see that the homoscedasticity hypothesis is not satisfied. It may
+be a good idea to consider a Generalized Linear Model of the `poisson`
+family:
 
 ```{r poisson_baseline}
 poisson_baseline<-glm(SalesPrices~PriceAtBeginning, family=poisson())
@@ -376,24 +378,35 @@ binomial model with `log` and `identity` link function.
 ```{r NegBin_baseline}
 NegBin_baseline_log<-glm.nb(SalesPrices~PriceAtBeginning, link="log", data=Constructions)
 NegBin_baseline_id<-glm.nb(SalesPrices~PriceAtBeginning, link="identity", data=Constructions)
-summary(NegBin_baseline_log)
-summary(NegBin_baseline_id)
+#summary(NegBin_baseline_log)
+#summary(NegBin_baseline_id)
+
+print("Negative Binomial baseline model (`log` link)")
+print(c("Residuals:", summary(NegBin_baseline_log$residuals)))
+print(c("AIC:", NegBin_baseline_log$aic))
+
+print("-----")
+
+print("Negative Binomial baseline model (`identity` link)")
+print(c("Residuals:", summary(NegBin_baseline_id$residuals)))
+print(c("AIC:", NegBin_baseline_id$aic))
+
 ```
 
-Confronting *Akaike information criterion* (AIC) and Residuals, we can easily
-choose the negative binomial model with `identity` link function. We also tried
-other standard generalized linear model (with different link functions) without
-reporting here: they all performs worse (comparing AIC values) then the
-negative binomial with identity as link function. We would like to
-mention the gamma family with identity as link function: it performs
-nearly the same. So we decided to consider both models and then choose
-the best. To find the best features we consider an automatic stepwise
-algorithm to choose a model by AIC. Since we may avoid some rough
-collinearity, we decided to feed the algorithm with an upper model
-containing just some of the $19$ features that are measured through
-time. With a brief analysis (omitted here for the sake of brevity) we
-decided to consider just the indexes at the building completion (marked
-as '\_5' in the dataset).
+Confronting *Akaike information criterion* (AIC) and Residuals, we can
+easily choose the negative binomial model with `identity` link function.
+We also tried other standard generalized linear model (with different
+link functions) without reporting here: they all performs worse
+(comparing AIC values) then the negative binomial with identity as link
+function. We would like to mention the gamma family with identity as
+link function: it performs nearly the same. So we decided to consider
+both models and then choose the best. To find the best features we
+consider an automatic stepwise algorithm to choose a model by AIC. Since
+we may avoid some rough collinearity, we decided to feed the algorithm
+with an upper model containing just some of the $19$ features that are
+measured through time. With a brief analysis (omitted here for the sake
+of brevity) we decided to consider just the indexes at the building
+completion (marked as '\_5' in the dataset).
 
 ```{r}
 ##Building indexes5 containing only the environment indexes at completion time
@@ -412,21 +425,21 @@ based on AIC using the stepwise algorithm.
 
 ```{r NegBin}
 all_index_noZIP<-c(1,2,4:10,indexes5)
-max_mod_NegBin <-glm.nb(SalesPrices~., data=Constructions, link="identity") #upper model
+max_mod_NegBin <-glm.nb(as.formula(paste("SalesPrices~factor(BuildingZIPCode)+", paste(ColNames[all_index_noZIP], collapse="+"))), data=Constructions, link="identity") #upper model
 
 #termplot(max_mod_NegBin, partial.resid = TRUE) #Checking if we need to rescale some feature (omitted for brevity); they all present smooth straight lines so no rescaling o GAMs needed.
 
 min_mod_NegBin <-glm.nb(SalesPrices~ PriceAtBeginning, link="identity") #lower model
 ```
 
-```{r fitting neg bin, results='hide', message=FALSE}
+```{r fitting neg bin, results="hide"}
 fit_best_NegBin<-step(min_mod_NegBin, scope=list(lower=min_mod_NegBin, upper=max_mod_NegBin), direction = "both") #Best fitting 
 ```
 
 ```{r summaries NegBin }
 vif(fit_best_NegBin) #Checking collinearity
+#summary(fit_best_NegBin)
 summary(fit_best_NegBin)
-plot(fit_best_NegBin)
 ```
 
 A future improvement can be done eliminating collinearity to comprehend
@@ -434,101 +447,81 @@ the real impact of each feature.
 
 Let's make the same work with the gamma family and just see the results.
 
-```{r gamma_model}
-max_mod_Gamma <-glm(SalesPrices~., data=Constructions, family = Gamma(link="identity"))
+```{r gamma_model, results="hide"}
+max_mod_Gamma <-glm(as.formula(paste("SalesPrices~factor(BuildingZIPCode)+", paste(ColNames[all_index_noZIP], collapse="+"))), data=Constructions, family = Gamma(link="identity"))
 min_mod_Gamma <-glm(SalesPrices~ PriceAtBeginning, family=Gamma(link="identity"))
 
 fit_best_Gamma<-step(min_mod_Gamma, scope=list(lower=min_mod_Gamma, upper=max_mod_Gamma), direction = "both")
 summary(fit_best_Gamma)
-plot(fit_best_Gamma)
+#plot(fit_best_Gamma)
 ```
 
-By confronting AIC values and visual plots, we can easily say that the best model
-is the gamma with identity link function.
+By confronting AIC values, we can easily say that the best model is the
+gamma with identity link function.
 
 At cost of interpretability, we can also build the model using all the
-environment indexes (and the original `BuildingZIPCode`s) and see if the
-model improves.
+environment indexes and see if the model improves.
 
-```{r fitting gamma model all}
+```{r fitting gamma model all, results="hide"}
 max_mod_Gamma_all <-glm(SalesPrices~., family=Gamma(link="identity"),data=Constructions)
 
 fit_best_Gamma_all<-step(min_mod_Gamma, scope=list(lower=min_mod_Gamma, upper=max_mod_Gamma_all), direction = "both")
-
+```
+```{r summury gamma all}
 summary(fit_best_Gamma_all)
 ```
 
-The resulting model is really complex but better in predicting. We make
-a 10-cross validation to assess our models estimating the MSE errors.
+The resulting model is really complex but better in predicting. We make a 10-cross validation to assess our models estimating the MSE errors (and checking if overfitting occurs).
 
-```{r 10-CV}
+```{r 10-CV., echo=TRUE}
 #MSE and MSE adjusted
+set.seed(234)
 cv.glm(Constructions, fit_best_NegBin, K=10)$delta #NegBin
 cv.glm(Constructions, fit_best_Gamma,K=10)$delta #Gamma
 cv.glm(Constructions, fit_best_Gamma_all, K=10)$delta #Gamma_all
+
+mean((SalesPrices-predict(fit_best_Gamma_all))^2) #Gamma_all on the dataset
 ```
 
-We obtain that the last model is definitely the better one.
-
-Let's also compare it with a random forest model (keeping all the features).
+We obtain that the last model (gamma with all features) is a bit overfitting the data but is still performing better.
+Let's also compare them with a random forest model (keeping all the
+features).
 
 ```{r}
 predictor_randomForest<-randomForest(SalesPrices~., data=Constructions)
 MSE_randomForest<-mean((SalesPrices-predict(predictor_randomForest))^2)
-MSE_randomForest
+print(c("MSE:", MSE_randomForest))
 varImpPlot(predictor_randomForest)
 ```
 
-We can see that the MSE error is way bigger than the last one. A brief
-look at the variable importance plot may be informative.
-
+We can see that the MSE error is way bigger than the last one. A brief look at the variable importance plot may be informative.
 
 ## Conclusions
 
-At the beginning of the data analysis we used as a base model the linear model
-with the predictor variable `PriceAtBeginning` and when we saw that the
-hypothesis of homoscedasticity was not fulfilled, we decided to consider the
-Poisson model (which fails because it has overdispersion), the negative binomial
-with log link function, and the negative binomial model with identity link function,
-since they are the most appropriate for our response variable, represented by
-discrete count results. 
+At the beginning of the data analysis we used as a base model the linear model with the predictor variable `PriceAtBeginning` and when we saw that the hypothesis of homoscedasticity was not fulfilled, we decided to consider the Poisson model (which fails because it has overdispersion), the negative binomial with log link function, and the negative binomial model with identity link function, since they are the most appropriate for our response variable, represented by discrete count results.
 
-After a simple comparison of the Akaike Information Criterion values, we choose
-the negative binomial model with the identity link function as it has the lowest
-AIC value.
-We proceeded to compare this model with a gamma model with identity link function
-as they are similar. 
+After a simple comparison of the Akaike Information Criterion values, we choose the negative binomial model with the identity link function as it has the lowest AIC value. We proceeded to compare this model with a gamma model with identity link function as they are similar.
 
-To avoid collinearity and after a brief analysis, we consider a new model
-whose variables are: 
+To avoid collinearity and after a brief analysis, we consider a new
+model whose variables are:
 
-* of the 19 characteristics that are measured over time,
-  those that measure the period of building completion;
-* a transformation of the `BuildingZIPCode` variable, in which we divided the
-  original ZIP codes into four main areas.
+-   of the 19 characteristics that are measured over time, those that measure the period of building completion;
+-   a transformation of the `BuildingZIPCode` variable, in which we
+    divided the original ZIP codes into four main areas.
 
-In this way, we constructed the two best-fitting models and compared them in
-terms of AIC values and collinearity.
+In this way, we constructed the two best-fitting models and compared them.
 
-In the case of the negative binomial model, when checking the collinearity we
-see that there are variables with high VIF values and therefore the model could
-be improved by eliminating the collinearity.When building these model, if we focus on the variables with low VIF value (less than 5) such as `ConstructionDuration`, `LoansExtendedNo_1`or `BuildingPermitsNo_4` and look at their p-values, we can see that these predictor variables are statistically significant at the 0.05 significance level and thus would be quite fundamental for a good fit.
+In the case of the negative binomial model, when checking the collinearity we see that there are variables with high VIF values and therefore our intepretability of each predictors can be improved by eliminating the collinearity. When building these model, if we focus on the variables with low VIF value (less than 5) such as  `PriceAtBeginning`,`ConstructionDuration`, `InterestRate_5`, `CityPopulation_5` and look at their p-values, we can see that these predictor variables are statistically significant at the 0.05 significance level (for all the models) and thus would be quite fundamental for a good fit.
 
-In the case of the gamma model, if we look at the p-values of the variables mentioned above, we can see that they are values well below 0.05 and are therefore even more significant.
+After developing the models and comparing the AIC values, we conclude that the best model is the gamma model with the identity link function.
 
-After developing the two models and
-comparing the AIC values and the plots, we conclude that the best model is the
-gamma model with the identity link function.
+Finally, to make sure we made the best choice, we compared the model we
+were working with (whose predictor variables were modified) with the
+gamma model with all the original variables (all the environmental indices) and for this model we obtained a lower AIC value, therefore it is better.
 
-Finally, to make sure we made the best choice, we compared the model we were
-working with (whose predictor variables were modified) with the gamma model with
-all the original variables (all the environmental indices and all the ZIP codes)
-and for this model we obtained a lower AIC value, therefore it is better. 
+Through the 10-cross validation and comparing by mean squared error the three models, we
+obtained again that the lowest RMSE values are those of the gamma model
+with all variables. Even when comparing this model with a Random Forest (using all features), we see that, indeed, the forest model
+has a higher MSE error.
 
-Through the 10-cross validation and comparing again the three models, we obtained
-again that the lowest RMSE values are those of the gamma model with all variables.
-Even when comparing this model with a Random Forest model with all characteristics,
-we see that, indeed, the forest model has a higher MSE error.
-
-Therefore, to estimate the `SalesPrices` variable in this dataset, the most
-appropriate model is the gamma model including all explanatory variables.
+Therefore, to estimate the `SalesPrices` variable in this dataset, the most appropriate model is the gamma model including all explanatory variables.
